@@ -45,14 +45,14 @@ The default file `pp-monthly-small.csv` is a modified file used for testing purp
 ## Next steps
 
 ### Resilience
-Error handling would be beneficial to allow the pipeline to fail gracefully should there be issues. For example, the input file could contain badly formatted files which the current implementation does not handle well.
+Error handling would be beneficial to allow the pipeline to fail gracefully should there be issues. For example, the input file could contain badly formatted records which the current implementation does not handle well.
 
 ### Parameterisation
-The pipeline arguments could be parameterised to make it more flexible, e.g. the input, output and pipeline runner arguments can be parameterised in a config file to handle different types of runs.
+The pipeline arguments could be parameterised to make it more flexible, e.g. the input, output and pipeline runner arguments can be parameterised in a config file to handle different types of runs without having to modify the main pipeline file.
 
 ### Tests
 Unit tests can be added at each of the key pipeline stages to ensure transforms are applied as expected. Examples of tests that could be created include:
-* `PropertyTransactions` to ensure that the hash generates an expected value. Since if the hash mechanism has changed then that means the properties cannot be matched on historical pipeline runs.
+* `PropertyTransactions` to ensure that the hash generates an expected value. If the hash mechanism has changed then that means the properties cannot be matched on historical pipeline runs.
 * `propertyHash` to ensure that the format is correct.
 * `GroupByPropertyHash` to ensure that the relevant transactions are grouped together for the same property.
 * `ConvertToJson` to ensure that valid JSON is produced.
@@ -70,3 +70,7 @@ Over time, there could also be changes to the address details of the same proper
 #### Subsequent runs
 
 Additional steps would need to be included to handle any subsequent runs for additional data files. At the moment, transactions are grouped in isolation of what is available in the file, but a transaction for the same property could be available in a different file.
+
+#### Runner compatibility
+
+There are compatibility issues with the ConvertToJson step in the pipeline when it is being run using DataflowRunner.
