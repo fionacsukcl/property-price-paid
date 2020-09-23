@@ -9,6 +9,7 @@ from __future__ import absolute_import
 import argparse
 import csv
 import hashlib
+import json
 import logging
 import re
 
@@ -83,9 +84,30 @@ def run(argv=None, save_main_session=True):
   parser.add_argument(
       '--output',
       dest='output',
+      # CHANGE 1/6: The Google Cloud Storage path is required
+      # for outputting the results.
       default='output_' + datetime.today().strftime('%Y-%m-%d_%H-%M-%S') + '.json',
       help='Output file to write results to.')
   known_args, pipeline_args = parser.parse_known_args(argv)
+  pipeline_args.extend([
+      # CHANGE 2/6: (OPTIONAL) Change this to DataflowRunner to
+      # run your pipeline on the Google Cloud Dataflow Service.
+      '--runner=DataflowRunner',
+      # CHANGE 3/6: (OPTIONAL) Your project ID is required in order to
+      # run your pipeline on the Google Cloud Dataflow Service.
+      '--project=SET_YOUR_PROJECT_ID_HERE',
+      # CHANGE 4/6: (OPTIONAL) The Google Cloud region (e.g. us-central1)
+      # is required in order to run your pipeline on the Google Cloud
+      # Dataflow Service.
+      '--region=SET_REGION_HERE',
+      # CHANGE 5/6: Your Google Cloud Storage path is required for staging local
+      # files.
+      '--staging_location=gs://YOUR_BUCKET_NAME/AND_STAGING_DIRECTORY',
+      # CHANGE 6/6: Your Google Cloud Storage path is required for temporary
+      # files.
+      '--temp_location=gs://YOUR_BUCKET_NAME/AND_TEMP_DIRECTORY',
+      '--job_name=property-price-paid',
+  ])  
 
   # We use the save_main_session option because one or more DoFn's in this
   # workflow rely on global context (e.g., a module imported at module level).
@@ -104,6 +126,8 @@ def run(argv=None, save_main_session=True):
       | 'propertyHash' >> beam.Map(lambda trans: (trans['propertyHash'], trans))
       # Group transactions that share a propertyHash together
       | 'GroupByPropertyHash' >> beam.GroupByKey()
+      # Convert PCollection to JSON format
+      | 'ConvertToJson' >> beam.Map(json.dumps)
       # Write to output file
       | 'WriteOutput' >> WriteToText(known_args.output)
     )
