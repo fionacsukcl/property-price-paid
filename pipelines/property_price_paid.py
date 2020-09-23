@@ -77,6 +77,7 @@ def run(argv=None, save_main_session=True):
   parser.add_argument(
       '--input',
       dest='input',
+      # default='gs://property-price-paid/pp-2020.csv',
       default='gs://property-price-paid/pp-monthly-small.csv',
       help='Input file to process.')
   parser.add_argument(
@@ -95,8 +96,15 @@ def run(argv=None, save_main_session=True):
   with beam.Pipeline(options=pipeline_options) as p:
     (
       p
+      # Read text into a PCollection
       | 'ReadInputFile' >> ReadFromText(known_args.input)
+      # Parse each row in file to generate a property hash and assign column names to values
       | 'PropertyTransactions' >> PropertyTransactions()
+      # Map each propertyHash and transaction as a key-value pair
+      | 'propertyHash' >> beam.Map(lambda trans: (trans['propertyHash'], trans))
+      # Group transactions that share a propertyHash together
+      | 'GroupByPropertyHash' >> beam.GroupByKey()
+      # Write to output file
       | 'WriteOutput' >> WriteToText(known_args.output)
     )
 
