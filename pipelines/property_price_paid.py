@@ -17,6 +17,7 @@ from past.builtins import unicode
 from datetime import datetime
 
 import apache_beam as beam
+from apache_beam.metrics.metric import Metrics
 from apache_beam.io import ReadFromText
 from apache_beam.io import WriteToText
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -31,7 +32,8 @@ class ParsePropertyTransactionsFn(beam.DoFn):
   '''
 
   def __init__(self):
-    super(ParsePropertyTransactionsFn, self).__init__()
+    beam.DoFn.__init__(self)
+    self.num_parse_errors = Metrics.counter(self.__class__, 'num_parse_errors')
 
   def process(self, elem):
     try:
@@ -92,7 +94,7 @@ def run(argv=None, save_main_session=True):
   pipeline_args.extend([
       # CHANGE 2/6: (OPTIONAL) Change this to DataflowRunner to
       # run your pipeline on the Google Cloud Dataflow Service.
-      '--runner=DataflowRunner',
+      '--runner=DirectRunner',
       # CHANGE 3/6: (OPTIONAL) Your project ID is required in order to
       # run your pipeline on the Google Cloud Dataflow Service.
       '--project=SET_YOUR_PROJECT_ID_HERE',
@@ -127,7 +129,8 @@ def run(argv=None, save_main_session=True):
       # Group transactions that share a propertyHash together
       | 'GroupByPropertyHash' >> beam.GroupByKey()
       # Convert PCollection to JSON format
-      | 'ConvertToJson' >> beam.Map(json.dumps)
+      # Needs amending, works with DirectRunner, but not DataflowRunner
+      #| 'ConvertToJson' >> beam.Map(json.dumps)
       # Write to output file
       | 'WriteOutput' >> WriteToText(known_args.output)
     )
